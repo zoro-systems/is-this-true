@@ -1,0 +1,15 @@
+fastapi==0.109.0
+uvicorn==0.27.0
+python-multipart==0.0.6
+pydantic==2.5.3
+
+# For OCR
+google-cloud-vision==3.7.2
+# Or use Tesseract
+# pytesseract==0.3.10
+
+# For web search
+brave-search-api==0.1.1
+
+# For async
+httpx==0.26.0
