@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, typography, borderRadius, shadows } from '../constants/theme';
 import {
+  requestCameraPermission,
   requestScreenshotPermission,
   requestOverlayPermission,
   requestMediaLibraryPermission,
@@ -34,26 +35,26 @@ interface PermissionsScreenProps {
 export default function PermissionsScreen({ onComplete }: PermissionsScreenProps) {
   const [permissions, setPermissions] = useState<Permission[]>([
     {
-      id: 'overlay',
-      name: 'Display Over Apps',
-      description: 'Show the IS THIS TRUE button on top of other apps',
-      icon: '🔘',
+      id: 'camera',
+      name: 'Camera',
+      description: 'Take photos to analyze',
+      icon: '📷',
       granted: false,
       required: true,
     },
     {
       id: 'screenshot',
-      name: 'Take Screenshots',
-      description: 'Capture the current screen for analysis',
+      name: 'Screenshot Access',
+      description: 'Capture screenshots for analysis',
       icon: '📸',
       granted: false,
       required: true,
     },
     {
       id: 'media',
-      name: 'Media Access',
-      description: 'Save and access screenshots',
-      icon: '📁',
+      name: 'Photo Library',
+      description: 'Save and access photos',
+      icon: '🖼️',
       granted: false,
       required: false,
     },
@@ -66,8 +67,14 @@ export default function PermissionsScreen({ onComplete }: PermissionsScreenProps
   }, []);
 
   const checkPermissions = async () => {
-    // In a real app, check actual permission status
-    // For now, we'll request them
+    // Check all permissions on mount
+    const cameraGranted = await requestCameraPermission();
+    const screenshotGranted = await requestScreenshotPermission();
+    const mediaGranted = await requestMediaLibraryPermission();
+    
+    updatePermission('camera', cameraGranted);
+    updatePermission('screenshot', screenshotGranted);
+    updatePermission('media', mediaGranted);
   };
 
   const requestPermission = async (permissionId: string) => {
@@ -75,13 +82,13 @@ export default function PermissionsScreen({ onComplete }: PermissionsScreenProps
 
     try {
       switch (permissionId) {
-        case 'overlay':
-          const overlayGranted = await requestOverlayPermission();
-          updatePermission('overlay', overlayGranted);
-          if (!overlayGranted) {
+        case 'camera':
+          const cameraGranted = await requestCameraPermission();
+          updatePermission('camera', cameraGranted);
+          if (!cameraGranted) {
             Alert.alert(
-              'Overlay Permission Required',
-              'Please enable Display Over Apps in your device settings to use this feature.',
+              'Camera Permission',
+              'Camera access is needed to take photos for analysis.',
               [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Open Settings', onPress: () => Linking.openSettings() },
@@ -93,6 +100,16 @@ export default function PermissionsScreen({ onComplete }: PermissionsScreenProps
         case 'screenshot':
           const screenshotGranted = await requestScreenshotPermission();
           updatePermission('screenshot', screenshotGranted);
+          if (!screenshotGranted) {
+            Alert.alert(
+              'Permission Required',
+              'Screenshot access is needed to capture your screen.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Open Settings', onPress: () => Linking.openSettings() },
+              ]
+            );
+          }
           break;
 
         case 'media':
@@ -125,7 +142,7 @@ export default function PermissionsScreen({ onComplete }: PermissionsScreenProps
     } else {
       Alert.alert(
         'Permissions Required',
-        'Please grant the required permissions to use this app.',
+        'Please grant camera and screenshot permissions to use this app.',
         [{ text: 'OK' }]
       );
     }
@@ -135,9 +152,9 @@ export default function PermissionsScreen({ onComplete }: PermissionsScreenProps
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Permissions</Text>
+          <Text style={styles.title}>📸 Is This True?</Text>
           <Text style={styles.subtitle}>
-            We need some permissions to work properly
+            We need a few permissions to analyze images
           </Text>
         </View>
 
@@ -178,8 +195,8 @@ export default function PermissionsScreen({ onComplete }: PermissionsScreenProps
                   {loading === permission.id
                     ? '...'
                     : permission.granted
-                    ? '✓ Granted'
-                    : 'Grant'}
+                    ? '✓ Allowed'
+                    : 'Allow'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -195,10 +212,10 @@ export default function PermissionsScreen({ onComplete }: PermissionsScreenProps
           >
             <Text style={styles.statusText}>
               {allPermissionsGranted
-                ? 'All Permissions Granted!'
+                ? '✅ All Permissions Granted!'
                 : requiredPermissionsGranted
-                ? 'Core Permissions Ready'
-                : 'More Permissions Needed'}
+                ? '✅ Core Features Ready'
+                : '⚠️ Permissions Needed'}
             </Text>
           </View>
         </View>
@@ -217,8 +234,7 @@ export default function PermissionsScreen({ onComplete }: PermissionsScreenProps
         </TouchableOpacity>
 
         <Text style={styles.privacyNote}>
-          🔒 Your privacy is important. We only analyze images locally and{'\n'}
-          never share your personal data.
+          🔒 Your photos stay on your device. We never upload or share them.
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -242,6 +258,7 @@ const styles = StyleSheet.create({
   title: {
     ...typography.heading,
     color: colors.text,
+    fontSize: 28,
   },
   subtitle: {
     ...typography.body,
@@ -306,7 +323,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.md,
     backgroundColor: colors.primary,
-    minWidth: 80,
+    minWidth: 70,
     alignItems: 'center',
   },
   permissionButtonGranted: {
@@ -318,7 +335,7 @@ const styles = StyleSheet.create({
   permissionButtonText: {
     color: colors.text,
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 13,
   },
   permissionButtonTextGranted: {
     color: colors.text,
@@ -341,6 +358,7 @@ const styles = StyleSheet.create({
   statusText: {
     color: colors.text,
     fontWeight: '600',
+    fontSize: 14,
   },
   button: {
     backgroundColor: colors.primary,

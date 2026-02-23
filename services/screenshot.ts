@@ -3,30 +3,22 @@
 import * as ScreenCapture from 'expo-screen-capture';
 import * as MediaLibrary from 'expo-media-library';
 import * as ImagePicker from 'expo-image-picker';
-import { Platform, PermissionsAndroid } from 'react-native';
+import * as Camera from 'expo-camera';
+import { Platform, PermissionsAndroid, Alert, Linking } from 'react-native';
+
+export async function requestCameraPermission(): Promise<boolean> {
+  const { status } = await Camera.requestCameraPermissionsAsync();
+  return status === 'granted';
+}
 
 export async function requestScreenshotPermission(): Promise<boolean> {
   if (Platform.OS === 'ios') {
     const { status } = await ScreenCapture.requestPermissionsAsync();
     return status === 'granted';
   } else {
-    // Android
-    try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-        {
-          title: 'Screenshot Permission',
-          message: 'This app needs access to take screenshots for analysis.',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Cancel',
-          buttonPositive: 'OK',
-        }
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    } catch (err) {
-      console.warn(err);
-      return false;
-    }
+    // Android - use MediaLibrary for screenshots
+    const { status } = await MediaLibrary.requestPermissionsAsync();
+    return status === 'granted';
   }
 }
 
@@ -35,20 +27,46 @@ export async function requestOverlayPermission(): Promise<boolean> {
     return false;
   }
 
+  // Android 11+ requires manual settings for overlay
+  // Check if already granted
+  const hasPermission = await PermissionsAndroid.check(
+    PermissionsAndroid.PERMISSIONS.SYSTEM_ALERT_WINDOW
+  );
+  
+  if (hasPermission) {
+    return true;
+  }
+
   try {
+    // This will NOT work on Android 6+ - it always returns denied
+    // The user MUST enable it manually in settings
     const granted = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.SYSTEM_ALERT_WINDOW,
       {
-        title: 'Overlay Permission',
-        message: 'This app needs permission to display over other apps.',
+        title: 'Display Over Other Apps',
+        message: 'This app needs permission to display over other apps to show the capture button.',
         buttonNeutral: 'Ask Me Later',
         buttonNegative: 'Cancel',
-        buttonPositive: 'OK',
+        buttonPositive: 'Open Settings',
       }
     );
-    return granted === PermissionsAndroid.RESULTS.GRANTED;
+    
+    if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+      return true;
+    }
+    
+    // If denied, guide user to settings
+    Alert.alert(
+      'Permission Required',
+      'To display the capture button over other apps, please enable "Display over other apps" in Settings.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Open Settings', onPress: () => Linking.openSettings() },
+      ]
+    );
+    return false;
   } catch (err) {
-    console.warn(err);
+    console.warn('Overlay permission error:', err);
     return false;
   }
 }
@@ -60,7 +78,6 @@ export async function requestMediaLibraryPermission(): Promise<boolean> {
 
 export async function takeScreenshot(): Promise<string | null> {
   try {
-    // Check if screen capture is available
     const hasPermission = await ScreenCapture.hasPermissionsAsync();
     if (!hasPermission) {
       const permission = await ScreenCapture.requestPermissionsAsync();
@@ -70,7 +87,6 @@ export async function takeScreenshot(): Promise<string | null> {
       }
     }
 
-    // Take screenshot
     const uri = await ScreenCapture.captureScreenAsync({
       format: 'png',
       quality: 0.8,
@@ -83,7 +99,6 @@ export async function takeScreenshot(): Promise<string | null> {
   }
 }
 
-// Fallback: Use image picker to capture
 export async function captureViaPicker(): Promise<string | null> {
   try {
     const result = await ImagePicker.launchCameraAsync({
