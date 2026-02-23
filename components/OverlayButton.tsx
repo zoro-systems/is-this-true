@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import {
   View,
-  Text,
+  Image,
   StyleSheet,
   TouchableOpacity,
   Animated,
@@ -21,7 +21,7 @@ interface OverlayButtonProps {
 
 export default function OverlayButton({ onPress, visible }: OverlayButtonProps) {
   const [position] = useState({
-    x: SCREEN_WIDTH - 120,
+    x: SCREEN_WIDTH - 100,
     y: SCREEN_HEIGHT / 2,
   });
 
@@ -80,8 +80,11 @@ export default function OverlayButton({ onPress, visible }: OverlayButtonProps) 
         onPress={onPress}
         activeOpacity={0.8}
       >
-        <Text style={styles.buttonText}>IS THIS</Text>
-        <Text style={styles.buttonTextBold}>TRUE?</Text>
+        <Image
+          source={require('../assets/button-icon.png')}
+          style={styles.buttonImage}
+          resizeMode="contain"
+        />
       </TouchableOpacity>
     </Animated.View>
   );
@@ -93,27 +96,16 @@ const styles = StyleSheet.create({
     zIndex: 9999,
   },
   button: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.lg,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 80,
     ...shadows.large,
-    borderWidth: 2,
-    borderColor: colors.secondary,
   },
-  buttonText: {
-    color: colors.text,
-    fontSize: 10,
-    fontWeight: '500',
-    letterSpacing: 0.5,
-  },
-  buttonTextBold: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
+  buttonImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
 });
