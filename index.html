@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Is This True?</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: white;
+        }
+        .container {
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00d4ff, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle {
+            color: #888;
+            margin-bottom: 30px;
+        }
+        .upload-btn {
+            background: linear-gradient(90deg, #00d4ff, #7c3aed);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        .upload-btn:hover { transform: scale(1.05); }
+        #result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 15px;
+            display: none;
+        }
+        .result-true { background: rgba(0, 255, 0, 0.1); border: 1px solid #00ff00; }
+        .result-false { background: rgba(255, 0, 0, 0.1); border: 1px solid #ff0000; }
+        .result-mixed { background: rgba(255, 255, 0, 0.1); border: 1px solid #ffff00; }
+        .percentage {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .true .percentage { color: #00ff00; }
+        .false .percentage { color: #ff0000; }
+        .mixed .percentage { color: #ffff00; }
+        .claim { font-style: italic; color: #ccc; margin: 15px 0; }
+        .summary { margin: 15px 0; line-height: 1.6; }
+        .sources { font-size: 0.9rem; color: #888; }
+        #preview { max-width: 100%; margin-top: 20px; border-radius: 10px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Is This True?</h1>
+        <p class="subtitle">Upload a screenshot to fact-check it</p>
+        
+        <input type="file" id="fileInput" accept="image/*" style="display:none">
+        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+            📷 Take/Upload Photo
+        </button>
+        
+        <img id="preview">
+        
+        <div id="result">
+            <div class="percentage" id="percentage">0%</div>
+            <div id="verdict">VERDICT</div>
+            <div class="claim" id="claim"></div>
+            <div class="summary" id="summary"></div>
+            <div class="sources" id="sources"></div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const preview = document.getElementById('preview');
+        const result = document.getElementById('result');
+        
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+            
+            // Mock analysis result
+            result.style.display = 'block';
+            result.className = 'result-mixed';
+            document.getElementById('percentage').textContent = '73%';
+            document.getElementById('verdict').textContent = 'PARTIALLY TRUE';
+            document.getElementById('claim').textContent = 'Based on the screenshot analysis';
+            document.getElementById('summary').textContent = 'The information in this image is mostly accurate but some details could not be verified. The claims made appear to be supported by available data, though additional context would help.';
+            document.getElementById('sources').textContent = 'Sources: Web search, Fact-check databases';
+        });
+    </script>
+</body>
+</html>
