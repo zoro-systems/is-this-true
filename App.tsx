@@ -3,7 +3,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
+  Text,
   StyleSheet,
+  TouchableOpacity,
   StatusBar,
   Platform,
   PermissionsAndroid,
@@ -18,8 +20,8 @@ import PermissionsScreen from './screens/PermissionsScreen';
 import OverlayButton from './components/OverlayButton';
 import ResultPopup from './components/ResultPopup';
 import { analyzeImageMock } from './services/api';
-import { takeScreenshot } from './services/screenshot';
-import { colors } from './constants/theme';
+import { captureImage } from './services/screenshot';
+import { colors, spacing, typography, borderRadius, shadows } from './constants/theme';
 
 type AppState = 'home' | 'permissions' | 'active';
 
@@ -99,16 +101,17 @@ export default function App() {
     setShowResult(true);
 
     try {
-      // Take screenshot
-      const screenshotUri = await takeScreenshot();
+      // Get image from camera or gallery
+      const imageBase64 = await captureImage();
 
-      if (!screenshotUri) {
-        // Fallback or error
-        console.log('Screenshot failed, using mock');
+      if (!imageBase64) {
+        // User cancelled
+        setShowResult(false);
+        return;
       }
 
       // For demo, use mock (replace with actual API call)
-      const response = await analyzeImageMock('');
+      const response = await analyzeImageMock(imageBase64);
 
       if (response.success && response.result) {
         setResult(response.result);
@@ -153,7 +156,18 @@ export default function App() {
 
         {appState === 'active' && (
           <View style={styles.activeContainer}>
-            {/* Main app content - could show instructions */}
+            <View style={styles.activeContent}>
+              <Text style={styles.activeTitle}>📸 Is This True?</Text>
+              <Text style={styles.activeSubtitle}>
+                Tap the button below to capture or select an image
+              </Text>
+              <TouchableOpacity
+                style={styles.captureButton}
+                onPress={handleOverlayPress}
+              >
+                <Text style={styles.captureButtonText}>📷 Capture Image</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -187,5 +201,33 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  activeContent: {
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  activeTitle: {
+    ...typography.heading,
+    color: colors.text,
+    fontSize: 28,
+    marginBottom: spacing.md,
+  },
+  activeSubtitle: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+  },
+  captureButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xxl,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
+    ...shadows.large,
+  },
+  captureButtonText: {
+    ...typography.title,
+    color: colors.text,
   },
 });

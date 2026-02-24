@@ -8,16 +8,9 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, typography, borderRadius, shadows } from '../constants/theme';
-import {
-  requestCameraPermission,
-  requestScreenshotPermission,
-  requestOverlayPermission,
-  requestMediaLibraryPermission,
-} from '../services/screenshot';
 
 interface Permission {
   id: string;
@@ -39,113 +32,27 @@ export default function PermissionsScreen({ onComplete }: PermissionsScreenProps
       name: 'Camera',
       description: 'Take photos to analyze',
       icon: '📷',
-      granted: false,
-      required: true,
+      granted: true, // Default to granted - will request when taking photo
+      required: false,
     },
     {
-      id: 'screenshot',
-      name: 'Screenshot Access',
-      description: 'Capture screenshots for analysis',
-      icon: '📸',
-      granted: false,
-      required: true,
-    },
-    {
-      id: 'media',
+      id: 'photos',
       name: 'Photo Library',
-      description: 'Save and access photos',
+      description: 'Select photos to analyze',
       icon: '🖼️',
-      granted: false,
+      granted: true, // Default to granted - will request when selecting
       required: false,
     },
   ]);
 
   const [loading, setLoading] = useState<string | null>(null);
 
-  useEffect(() => {
-    checkPermissions();
-  }, []);
-
-  const checkPermissions = async () => {
-    // Check all permissions on mount
-    const cameraGranted = await requestCameraPermission();
-    const screenshotGranted = await requestScreenshotPermission();
-    const mediaGranted = await requestMediaLibraryPermission();
-    
-    updatePermission('camera', cameraGranted);
-    updatePermission('screenshot', screenshotGranted);
-    updatePermission('media', mediaGranted);
-  };
-
-  const requestPermission = async (permissionId: string) => {
-    setLoading(permissionId);
-
-    try {
-      switch (permissionId) {
-        case 'camera':
-          const cameraGranted = await requestCameraPermission();
-          updatePermission('camera', cameraGranted);
-          if (!cameraGranted) {
-            Alert.alert(
-              'Camera Permission',
-              'Camera access is needed to take photos for analysis.',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Open Settings', onPress: () => Linking.openSettings() },
-              ]
-            );
-          }
-          break;
-
-        case 'screenshot':
-          const screenshotGranted = await requestScreenshotPermission();
-          updatePermission('screenshot', screenshotGranted);
-          if (!screenshotGranted) {
-            Alert.alert(
-              'Permission Required',
-              'Screenshot access is needed to capture your screen.',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Open Settings', onPress: () => Linking.openSettings() },
-              ]
-            );
-          }
-          break;
-
-        case 'media':
-          const mediaGranted = await requestMediaLibraryPermission();
-          updatePermission('media', mediaGranted);
-          break;
-      }
-    } catch (error) {
-      console.error('Permission error:', error);
-    } finally {
-      setLoading(null);
-    }
-  };
-
-  const updatePermission = (id: string, granted: boolean) => {
-    setPermissions(prev =>
-      prev.map(p => (p.id === id ? { ...p, granted } : p))
-    );
-  };
-
   const requiredPermissionsGranted = permissions
     .filter(p => p.required)
     .every(p => p.granted);
 
-  const allPermissionsGranted = permissions.every(p => p.granted);
-
   const handleContinue = () => {
-    if (requiredPermissionsGranted) {
-      onComplete();
-    } else {
-      Alert.alert(
-        'Permissions Required',
-        'Please grant camera and screenshot permissions to use this app.',
-        [{ text: 'OK' }]
-      );
-    }
+    onComplete();
   };
 
   return (
@@ -154,7 +61,13 @@ export default function PermissionsScreen({ onComplete }: PermissionsScreenProps
         <View style={styles.header}>
           <Text style={styles.title}>📸 Is This True?</Text>
           <Text style={styles.subtitle}>
-            We need a few permissions to analyze images
+            Analyze any image to check if it's true
+          </Text>
+        </View>
+
+        <View style={styles.infoBox}>
+          <Text style={styles.infoText}>
+            This app works like a magic lens - just tap the camera button to take a photo or select one from your gallery, and we'll analyze it for you!
           </Text>
         </View>
 
@@ -165,72 +78,26 @@ export default function PermissionsScreen({ onComplete }: PermissionsScreenProps
                 <Text style={styles.iconText}>{permission.icon}</Text>
               </View>
               <View style={styles.permissionInfo}>
-                <View style={styles.permissionHeader}>
-                  <Text style={styles.permissionName}>{permission.name}</Text>
-                  {permission.required && (
-                    <View style={styles.requiredBadge}>
-                      <Text style={styles.requiredText}>Required</Text>
-                    </View>
-                  )}
-                </View>
+                <Text style={styles.permissionName}>{permission.name}</Text>
                 <Text style={styles.permissionDesc}>
                   {permission.description}
                 </Text>
               </View>
-              <TouchableOpacity
-                style={[
-                  styles.permissionButton,
-                  permission.granted && styles.permissionButtonGranted,
-                  loading === permission.id && styles.permissionButtonLoading,
-                ]}
-                onPress={() => requestPermission(permission.id)}
-                disabled={permission.granted || loading === permission.id}
-              >
-                <Text
-                  style={[
-                    styles.permissionButtonText,
-                    permission.granted && styles.permissionButtonTextGranted,
-                  ]}
-                >
-                  {loading === permission.id
-                    ? '...'
-                    : permission.granted
-                    ? '✓ Allowed'
-                    : 'Allow'}
-                </Text>
-              </TouchableOpacity>
+              <View style={[styles.permissionButton, styles.permissionButtonGranted]}>
+                <Text style={styles.permissionButtonText}>✓ Ready</Text>
+              </View>
             </View>
           ))}
         </View>
 
         <View style={styles.statusContainer}>
-          <View
-            style={[
-              styles.statusBadge,
-              allPermissionsGranted ? styles.statusGranted : styles.statusPending,
-            ]}
-          >
-            <Text style={styles.statusText}>
-              {allPermissionsGranted
-                ? '✅ All Permissions Granted!'
-                : requiredPermissionsGranted
-                ? '✅ Core Features Ready'
-                : '⚠️ Permissions Needed'}
-            </Text>
+          <View style={[styles.statusBadge, styles.statusGranted]}>
+            <Text style={styles.statusText}>✅ Ready to Use!</Text>
           </View>
         </View>
 
-        <TouchableOpacity
-          style={[
-            styles.button,
-            !requiredPermissionsGranted && styles.buttonDisabled,
-          ]}
-          onPress={handleContinue}
-          disabled={!requiredPermissionsGranted}
-        >
-          <Text style={styles.buttonText}>
-            {allPermissionsGranted ? 'Start Using App' : 'Continue'}
-          </Text>
+        <TouchableOpacity style={styles.button} onPress={handleContinue}>
+          <Text style={styles.buttonText}>Start Using App</Text>
         </TouchableOpacity>
 
         <Text style={styles.privacyNote}>
@@ -266,6 +133,18 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     textAlign: 'center',
   },
+  infoBox: {
+    backgroundColor: colors.primary + '20',
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  infoText: {
+    ...typography.body,
+    color: colors.text,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
   permissionList: {
     marginBottom: spacing.xl,
   },
@@ -293,25 +172,9 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: spacing.sm,
   },
-  permissionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   permissionName: {
     ...typography.subtitle,
     color: colors.text,
-  },
-  requiredBadge: {
-    backgroundColor: colors.warning + '30',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: borderRadius.sm,
-    marginLeft: spacing.sm,
-  },
-  requiredText: {
-    fontSize: 10,
-    color: colors.warning,
-    fontWeight: '600',
   },
   permissionDesc: {
     ...typography.caption,
@@ -329,16 +192,10 @@ const styles = StyleSheet.create({
   permissionButtonGranted: {
     backgroundColor: colors.success,
   },
-  permissionButtonLoading: {
-    backgroundColor: colors.textSecondary,
-  },
   permissionButtonText: {
     color: colors.text,
     fontWeight: '600',
     fontSize: 13,
-  },
-  permissionButtonTextGranted: {
-    color: colors.text,
   },
   statusContainer: {
     alignItems: 'center',
@@ -352,9 +209,6 @@ const styles = StyleSheet.create({
   statusGranted: {
     backgroundColor: colors.success + '30',
   },
-  statusPending: {
-    backgroundColor: colors.warning + '30',
-  },
   statusText: {
     color: colors.text,
     fontWeight: '600',
@@ -367,9 +221,6 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     alignItems: 'center',
     ...shadows.medium,
-  },
-  buttonDisabled: {
-    backgroundColor: colors.textSecondary,
   },
   buttonText: {
     ...typography.subtitle,

@@ -75,7 +75,7 @@ export default function HomeScreen({ onGetStarted }: HomeScreenProps) {
               <Text style={styles.stepNumberText}>1</Text>
             </View>
             <Text style={styles.stepText}>
-              The "IS THIS TRUE" button appears over your apps
+              Tap the camera button to take a photo or select from gallery
             </Text>
           </View>
           <View style={styles.step}>
@@ -83,7 +83,7 @@ export default function HomeScreen({ onGetStarted }: HomeScreenProps) {
               <Text style={styles.stepNumberText}>2</Text>
             </View>
             <Text style={styles.stepText}>
-              Tap it when you see something you want to check
+              Our AI analyzes the image to check if it's true
             </Text>
           </View>
           <View style={styles.step}>

@@ -1,78 +1,43 @@
 // Screenshot service for Is This True? app
+// Uses ImagePicker for everything - handles permissions automatically
 
-import * as ScreenCapture from 'expo-screen-capture';
-import * as MediaLibrary from 'expo-media-library';
 import * as ImagePicker from 'expo-image-picker';
-import { Platform, PermissionsAndroid, Alert, Linking } from 'react-native';
+import { Platform, Alert } from 'react-native';
 
-// Camera permission - use ImagePicker as fallback
+// These return true - permissions are requested when actually needed
 export async function requestCameraPermission(): Promise<boolean> {
-  try {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    return status === 'granted';
-  } catch (error) {
-    console.warn('Camera permission error:', error);
-    return false;
-  }
+  return true;
 }
 
-// Screenshot/Media permission - simplified
 export async function requestScreenshotPermission(): Promise<boolean> {
-  try {
-    const { status } = await MediaLibrary.requestPermissionsAsync();
-    return status === 'granted';
-  } catch (error) {
-    console.warn('Screenshot permission error:', error);
-    return false;
-  }
+  return true;
 }
 
-// No overlay permission needed for this version
 export async function requestOverlayPermission(): Promise<boolean> {
   return true;
 }
 
-// Media library permission
 export async function requestMediaLibraryPermission(): Promise<boolean> {
-  try {
-    const { status } = await MediaLibrary.requestPermissionsAsync();
-    return status === 'granted';
-  } catch (error) {
-    console.warn('Media permission error:', error);
-    return false;
-  }
+  return true;
 }
 
-// Take screenshot using screen capture
-export async function takeScreenshot(): Promise<string | null> {
+// Main function to get an image - tries camera first, then gallery
+export async function captureImage(): Promise<string | null> {
   try {
-    const hasPermission = await ScreenCapture.hasPermissionsAsync();
-    if (!hasPermission) {
-      const permission = await ScreenCapture.requestPermissionsAsync();
-      if (!permission.granted) {
-        console.log('Screen capture permission denied');
-        return null;
-      }
+    // Check and request camera permission
+    const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+    if (cameraPermission.status !== 'granted') {
+      Alert.alert(
+        'Camera Permission Needed',
+        'Please allow camera access to take photos.',
+        [{ text: 'OK' }]
+      );
+      return null;
     }
 
-    const uri = await ScreenCapture.captureScreenAsync({
-      format: 'png',
-      quality: 0.8,
-    });
-
-    return uri.uri;
-  } catch (error) {
-    console.error('Screenshot error:', error);
-    return null;
-  }
-}
-
-// Fallback: Use image picker to capture/select image
-export async function captureViaPicker(): Promise<string | null> {
-  try {
     // Try camera first
     const cameraResult = await ImagePicker.launchCameraAsync({
-      allowsEditing: false,
+      allowsEditing: true,
       quality: 0.8,
       base64: true,
     });
@@ -81,9 +46,19 @@ export async function captureViaPicker(): Promise<string | null> {
       return cameraResult.assets[0].base64;
     }
 
-    // Fallback to image library
+    // If camera cancelled or failed, try gallery
+    const libraryPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (libraryPermission.status !== 'granted') {
+      Alert.alert(
+        'Photo Library Permission Needed',
+        'Please allow access to select photos.',
+        [{ text: 'OK' }]
+ );
+      return null;
+    }
+
     const libraryResult = await ImagePicker.launchImageLibraryAsync({
-      allowsEditing: false,
+      allowsEditing: true,
       quality: 0.8,
       base64: true,
     });
@@ -94,7 +69,16 @@ export async function captureViaPicker(): Promise<string | null> {
 
     return null;
   } catch (error) {
-    console.error('Image picker error:', error);
+    console.error('Image capture error:', error);
     return null;
   }
+}
+
+// Legacy function names for compatibility
+export async function takeScreenshot(): Promise<string | null> {
+  return captureImage();
+}
+
+export async function captureViaPicker(): Promise<string | null> {
+  return captureImage();
 }
